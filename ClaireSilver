@@ -1,0 +1,185 @@
+let targets = [];
+let score = 0;
+let timer = 60;
+let gameState = "start";
+let difficulty = "hard";
+let targetTypes = ["normal", "strong"];
+let highScores = [];
+let lives = 10;
+let gameCanvas;
+let paintCanvas;
+
+function setup() {
+  gameCanvas = createCanvas(700, 600);
+  paintCanvas = createGraphics(700, 600);
+  textAlign(CENTER, CENTER);
+  textSize(32);
+  rectMode(CENTER);
+  ellipseMode(CENTER);
+}
+
+function draw() {
+  background(255);
+  image(paintCanvas, 0, 0);
+
+  if (gameState === "start") {
+    drawStartScreen();
+  } else if (gameState === "play") {
+    updateTargets();
+    drawTargets();
+    drawCrosshair();
+    drawScore();
+    drawLives();
+    timer -= 1 / frameRate();
+    checkEndCondition();
+  } else if (gameState === "end") {
+    setTimeout(() => {
+      gameState = "start";
+      resetGame();
+    }, 5000);
+  }
+}
+
+function drawStartScreen() {
+  text("Click to start - ClaireSilver Edition", width / 2, height / 2 - 50);
+}
+
+function resetGame() {
+  targets = [];
+  score = 0;
+  timer = 60;
+  lives = 10;
+  paintCanvas.clear();
+}
+
+function updateTargets() {
+  if (random() < 0.02) {
+    let targetType = "normal";
+    if (random() < 0.2) {
+      targetType = "strong";
+    }
+    addTarget(targetType);
+  }
+
+  for (let t of targets) {
+    t.x += t.speedX;
+    t.y += t.speedY;
+    if (t.x < 0 || t.x > width) {
+      t.speedX *= -1;
+    }
+    if (t.y < 0 || t.y > height) {
+      t.speedY *= -1;
+    }
+  }
+}
+
+function addTarget(type) {
+  let targetSize = 20;
+  let targetSpeed = 6;
+  let targetColor = color(random(255), random(255), random(255));
+
+  let newTarget = {
+    x: random(width),
+    y: random(height),
+    size: targetSize,
+    speedX: random(-targetSpeed, targetSpeed),
+    speedY: random(-targetSpeed, targetSpeed),
+    type: type,
+    health: type === "strong" ? 3 : 1,
+    explosion: false,
+    explosionSize: 0,
+    color: targetColor
+  };
+
+  targets.push(newTarget);
+}
+
+function drawTargets() {
+  for (let t of targets) {
+    fill(t.color);
+    if (t.explosion) {
+      fill(255, 255, 0);
+      ellipse(t.x, t.y, t.explosionSize);
+      t.explosionSize += 5;
+      if (t.explosionSize > t.size * 2) {
+        t.explosion = false;
+      }
+    } else {
+      ellipse(t.x, t.y, t.size);
+    }
+  }
+}
+
+function drawCrosshair() {
+  strokeWeight(2);
+  stroke(0);
+  noFill();
+  let crosshairSize = 20;
+  line(mouseX - crosshairSize / 2, mouseY, mouseX + crosshairSize / 2, mouseY);
+  line(mouseX, mouseY - crosshairSize / 2, mouseX, mouseY + crosshairSize / 2);
+ellipse(mouseX, mouseY, crosshairSize, crosshairSize);
+}
+
+function drawScore() {
+fill(0);
+textAlign(LEFT, TOP);
+text("Score: " + score, 20, 20);
+textAlign(RIGHT, TOP);
+text("Time: " + int(timer), width - 20, 20);
+}
+
+function drawLives() {
+fill(0);
+textAlign(LEFT, BOTTOM);
+text("Lives: " + lives, 20, height - 20);
+}
+
+function checkEndCondition() {
+if (timer <= 0 || lives <= 0) {
+gameState = "end";
+}
+}
+
+function mouseClicked() {
+if (gameState === "start") {
+gameState = "play";
+resetGame();
+}
+}
+
+function mousePressed() {
+if (gameState === "play") {
+let targetHit = false;
+for (let i = targets.length - 1; i >= 0; i--) {
+let t = targets[i];
+let d = dist(mouseX, mouseY, t.x, t.y);
+if (d < t.size / 2) {
+targetHit = true;
+paintCanvas.fill(t.color);
+paintCanvas.noStroke();
+paintCanvas.ellipse(t.x, t.y, t.size * 10, t.size * 10);
+    if (t.type === "normal") {
+      score += 10;
+      t.explosion = true;
+    } else if (t.type === "strong") {
+      t.health -= 1;
+      if (t.health === 0) {
+        score += 30;
+        t.explosion = true;
+      } else {
+        continue;
+      }
+    }
+    if (t.explosion) {
+      setTimeout(() => {
+        targets.splice(i, 1);
+      }, 100);
+    }
+  }
+}
+
+if (!targetHit) {
+  lives -= 1;
+}
+}
+}
