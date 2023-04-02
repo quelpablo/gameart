@@ -41,7 +41,7 @@ function draw() {
 }
 
 function drawStartScreen() {
-  text("Click to start - ClaireSilver Edition", width / 2, height / 2 - 50);
+  text("Click to start", width / 2, height / 2 - 50);
 }
 
 function resetGame() {
